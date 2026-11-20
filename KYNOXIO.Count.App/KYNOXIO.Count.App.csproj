@@ -21,13 +21,13 @@
 		<Nullable>enable</Nullable>
 
 		<!-- Display name -->
-		<ApplicationTitle>KYNOXIO.Count.App</ApplicationTitle>
+		<ApplicationTitle>KYNOXIO Count</ApplicationTitle>
 
 		<!-- App Identifier -->
-		<ApplicationId>com.companyname.kynoxio.count.app</ApplicationId>
+		<ApplicationId>com.kynoxio.count</ApplicationId>
 
 		<!-- Versions -->
-		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+		<ApplicationDisplayVersion>0.1.0</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">11.0</SupportedOSPlatformVersion>

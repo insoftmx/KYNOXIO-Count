@@ -2,10 +2,13 @@ namespace KYNOXIO.Count.App;
 
 public partial class App : Application
 {
-	public App()
-	{
-		InitializeComponent();
+    public App()
+    {
+        InitializeComponent();
 
-		MainPage = new AppShell();
-	}
+        // KYNOXIO Count utiliza una apariencia oscura industrial.
+        UserAppTheme = AppTheme.Dark;
+
+        MainPage = new AppShell();
+    }
 }
