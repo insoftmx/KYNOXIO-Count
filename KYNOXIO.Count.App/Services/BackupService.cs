@@ -107,8 +107,10 @@ public sealed class BackupService
             await using (var stream = manifestEntry.Open())
                 manifest = await JsonSerializer.DeserializeAsync<BackupManifest>(stream, JsonOptions);
 
-            if (manifest is null || manifest.FormatVersion != BackupFormatVersion || manifest.Sessions is null)
-                throw new InvalidDataException("La versión o estructura del respaldo no es compatible.");
+            if (manifestEntry.Length > 20 * 1024 * 1024 ||
+                archive.Entries.Count > 100001 ||
+                manifest is null || manifest.FormatVersion != BackupFormatVersion || manifest.Sessions is null)
+                throw new InvalidDataException("La versión o estructura del respaldo no es compatible o supera los límites permitidos.");
 
             if (manifest.Sessions.Count > 100000)
                 throw new InvalidDataException("El respaldo supera el límite de sesiones permitido.");
@@ -118,7 +120,9 @@ public sealed class BackupService
             {
                 if (session is null || !IsSafeId(session.Id) || !ids.Add(session.Id) ||
                     string.IsNullOrWhiteSpace(session.Folio) || session.Folio.Length > 80 ||
-                    session.ItemDescription.Length > 160 || session.Notes.Length > 1000 ||
+                    session.ItemDescription is null || session.ItemDescription.Length > 160 ||
+                    session.Notes is null || session.Notes.Length > 1000 ||
+                    session.ImageRelativePath is null || session.ImageRelativePath.Length > 260 ||
                     session.ManualCount < 0 || session.DetectedCount < 0)
                     throw new InvalidDataException("El respaldo contiene una sesión inválida o duplicada.");
             }
@@ -135,6 +139,9 @@ public sealed class BackupService
                 var imageEntry = IsAllowedImageExtension(originalExtension)
                     ? archive.GetEntry($"Images/{session.Id}{originalExtension}")
                     : null;
+
+                if (imageEntry is not null && imageEntry.Length > 50 * 1024 * 1024)
+                    throw new InvalidDataException("Una fotografía supera el límite de 50 MB.");
 
                 if (imageEntry is not null)
                 {
