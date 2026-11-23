@@ -67,6 +67,16 @@ public partial class MainPage : ContentPage
         });
     }
 
+    private async void OnBackupClicked(object? sender, TappedEventArgs e)
+    {
+        var service = MauiProgram.Services.GetRequiredService<BackupService>();
+        await Navigation.PushModalAsync(new NavigationPage(new BackupPage(service))
+        {
+            BarBackgroundColor = Color.FromArgb("#111F2E"),
+            BarTextColor = Colors.White
+        });
+    }
+
     /// <summary>
     /// Abre la cámara o galería y muestra la fotografía en vista previa.
     /// La imagen se conserva hasta que el usuario confirma o cancela.
