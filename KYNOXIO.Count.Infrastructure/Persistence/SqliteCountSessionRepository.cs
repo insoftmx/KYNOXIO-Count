@@ -139,8 +139,10 @@ public sealed class SqliteCountSessionRepository : ICountSessionRepository
     };
 
     // SQLite PRAGMA devuelve el nombre de la columna en la propiedad "name".
-    private sealed class SqliteColumnInfo
+    public sealed class SqliteColumnInfo
     {
+        public SqliteColumnInfo() { }
+
         [Column("name")]
         public string Name { get; set; } = string.Empty;
     }
