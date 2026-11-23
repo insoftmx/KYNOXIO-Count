@@ -27,4 +27,15 @@ internal sealed class CountSessionRecord
 
     public int? DetectedCount { get; set; }
     public double? Confidence { get; set; }
+
+    [MaxLength(160)]
+    public string ItemDescription { get; set; } = string.Empty;
+
+    public int? ManualCount { get; set; }
+
+    [MaxLength(1000)]
+    public string Notes { get; set; } = string.Empty;
+
+    [MaxLength(24)]
+    public string CountMethod { get; set; } = "Manual";
 }
