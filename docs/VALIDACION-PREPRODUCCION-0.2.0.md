@@ -76,3 +76,19 @@ dotnet build .\KYNOXIO.Count.App\KYNOXIO.Count.App.csproj -f net8.0-android -t:R
 ## Limitación conocida
 
 Los datos y las fotografías se almacenan localmente en el dispositivo. Si el usuario desinstala la aplicación o Android borra sus datos, el historial puede perderse. Esta versión no sincroniza ni respalda datos en la nube. Antes de uso productivo crítico debe implementarse una función de exportación/respaldo y recuperación.
+
+## E. Respaldo y recuperación
+
+1. Crear al menos tres sesiones: una pendiente y dos con cantidades manuales diferentes.
+2. Abrir Inicio > Respaldo y configuración > Crear y compartir respaldo.
+3. Guardar el ZIP en una ubicación externa al almacenamiento privado de la app (por ejemplo, Drive o una computadora).
+4. Comprobar que el archivo ZIP existe y no está vacío.
+5. En el teléfono, borrar una sesión de prueba solo si se cuenta con otro respaldo y se acepta perderla; alternativamente, realizar la recuperación en un segundo dispositivo o instalación limpia.
+6. Seleccionar el ZIP desde Restaurar respaldo.
+7. Confirmar que las sesiones y cantidades reaparecen y que las fotografías disponibles se abren.
+8. Restaurar el mismo ZIP una segunda vez: no deben duplicarse sesiones; las sesiones con el mismo ID se actualizan.
+9. Crear una sesión nueva después de la restauración y comprobar que se guarda normalmente.
+10. Probar un archivo que no sea respaldo ZIP: debe mostrarse un error sin alterar el historial.
+11. Probar un ZIP con versión no compatible o entradas inválidas: debe rechazarse sin extraer rutas fuera del almacenamiento de la app.
+
+El respaldo es un archivo portable de sesiones y fotografías, no una copia binaria de SQLite. La restauración agrega sesiones faltantes y actualiza por ID; nunca borra sesiones locales que no estén incluidas en el ZIP.
