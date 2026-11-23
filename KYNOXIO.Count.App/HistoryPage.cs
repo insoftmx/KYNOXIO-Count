@@ -159,9 +159,11 @@ public sealed class HistoryPage : ContentPage
                 },
                 new Label
                 {
-                    Text = session.DetectedCount.HasValue
-                        ? $"Piezas detectadas: {session.DetectedCount.Value}"
-                        : "Pendiente de análisis automático",
+                    Text = session.ManualCount.HasValue
+                        ? $"{session.ItemDescription}: {session.ManualCount.Value:N0} piezas (manual)"
+                        : session.DetectedCount.HasValue
+                            ? $"Piezas detectadas: {session.DetectedCount.Value}"
+                            : "Pendiente de conteo",
                     FontSize = 11,
                     TextColor = Color.FromArgb("#22D3EE")
                 }
