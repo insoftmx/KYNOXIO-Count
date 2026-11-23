@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="../KYNOXIO.Count.Core/KYNOXIO.Count.Core.csproj" />
     <PackageReference Include="sqlite-net-pcl" Version="1.11.285" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
   </ItemGroup>
 
   <PropertyGroup>
