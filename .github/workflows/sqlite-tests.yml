@@ -1,0 +1,28 @@
+name: KYNOXIO Count - SQLite tests
+
+on:
+  push:
+    branches:
+      - main
+      - feature/sqlite-history-0.2.0
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  sqlite-tests:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore test project
+        run: dotnet restore .\KYNOXIO.Count.Tests\KYNOXIO.Count.Tests.csproj
+
+      - name: Run SQLite tests
+        run: dotnet test .\KYNOXIO.Count.Tests\KYNOXIO.Count.Tests.csproj --configuration Release --no-restore
