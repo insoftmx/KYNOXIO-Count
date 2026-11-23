@@ -75,7 +75,7 @@ dotnet build .\KYNOXIO.Count.App\KYNOXIO.Count.App.csproj -f net8.0-android -t:R
 
 ## Limitación conocida
 
-Los datos y las fotografías se almacenan localmente en el dispositivo. Si el usuario desinstala la aplicación o Android borra sus datos, el historial puede perderse. Esta versión no sincroniza ni respalda datos en la nube. Antes de uso productivo crítico debe implementarse una función de exportación/respaldo y recuperación.
+Los datos y las fotografías se almacenan localmente en el dispositivo. Si el usuario desinstala la aplicación o Android borra sus datos, el historial puede perderse. La aplicación ya permite exportar y restaurar un archivo ZIP manualmente, pero no sincroniza datos en la nube ni crea respaldos automáticos. La recuperación debe probarse en Android antes de considerar esta versión apta para uso operativo prolongado.
 
 ## E. Respaldo y recuperación
 
