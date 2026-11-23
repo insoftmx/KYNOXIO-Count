@@ -39,7 +39,7 @@
                            CharacterSpacing="2" TextColor="{StaticResource AccentCyan}" />
                     <Label Text="Cada pieza&#10;cuenta." FontSize="36" FontAttributes="Bold"
                            LineHeight="0.95" TextColor="{StaticResource TextPrimary}" />
-                    <Label Text="Cuenta materiales y componentes industriales mediante vision artificial."
+                    <Label Text="Registra materiales y componentes industriales con evidencia fotográfica y conteo asistido."
                            FontSize="14" LineHeight="1.35"
                            TextColor="{StaticResource TextSecondary}" />
                 </VerticalStackLayout>
@@ -91,7 +91,7 @@
                                 <VerticalStackLayout Spacing="3">
                                     <Label Text="Fotografía" FontSize="16" FontAttributes="Bold"
                                            TextColor="{StaticResource TextPrimary}" />
-                                    <Label Text="Analiza una imagen" FontSize="11"
+                                    <Label Text="Guarda evidencia y registra conteo" FontSize="11"
                                            TextColor="{StaticResource TextSecondary}" />
                                 </VerticalStackLayout>
                                 <Button Text="ABRIR" Clicked="OnPhotoClicked"
@@ -109,12 +109,12 @@
                                            HorizontalOptions="Center" VerticalOptions="Center" />
                                 </Border>
                                 <VerticalStackLayout Spacing="3">
-                                    <Label Text="Video en vivo" FontSize="16" FontAttributes="Bold"
+                                    <Label Text="Video en vivo · Próximamente" FontSize="16" FontAttributes="Bold"
                                            TextColor="{StaticResource TextPrimary}" />
-                                    <Label Text="Conteo en tiempo real" FontSize="11"
+                                    <Label Text="Función en desarrollo" FontSize="11"
                                            TextColor="{StaticResource TextSecondary}" />
                                 </VerticalStackLayout>
-                                <Button Text="INICIAR" Clicked="OnLiveVideoClicked"
+                                <Button Text="PRÓXIMAMENTE" IsEnabled="False" Clicked="OnLiveVideoClicked"
                                         Style="{StaticResource SecondaryActionButton}" />
                             </VerticalStackLayout>
                         </Border>
