@@ -5,8 +5,7 @@ using Microsoft.Maui.Storage;
 namespace KYNOXIO.Count.App.Services;
 
 /// <summary>
-/// Coordina el guardado de la imagen original y el registro SQLite.
-/// Si la escritura de la base falla, elimina la imagen para no dejar archivos huérfanos.
+/// Coordina el guardado de imágenes y la persistencia de sesiones y conteos manuales.
 /// </summary>
 public sealed class CountSessionService
 {
@@ -49,7 +48,11 @@ public sealed class CountSessionService
                 ImageRelativePath = relativePath,
                 Status = "Pending",
                 DetectedCount = null,
-                Confidence = null
+                Confidence = null,
+                ItemDescription = string.Empty,
+                ManualCount = null,
+                Notes = string.Empty,
+                CountMethod = "Manual"
             };
 
             await _repository.AddAsync(session);
@@ -63,6 +66,40 @@ public sealed class CountSessionService
 
             throw;
         }
+    }
+
+    /// <summary>
+    /// Registra el resultado contado y verificado por una persona.
+    /// No modifica ni simula resultados de inteligencia artificial.
+    /// </summary>
+    public async Task<CountSession> SaveManualCountAsync(
+        string sessionId,
+        string itemDescription,
+        int quantity,
+        string? notes)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId))
+            throw new ArgumentException("La sesión es obligatoria.", nameof(sessionId));
+        if (string.IsNullOrWhiteSpace(itemDescription))
+            throw new ArgumentException("Describe el material o componente.", nameof(itemDescription));
+        if (itemDescription.Trim().Length > 160)
+            throw new ArgumentException("La descripción no puede superar 160 caracteres.", nameof(itemDescription));
+        if (quantity < 0)
+            throw new ArgumentOutOfRangeException(nameof(quantity), "La cantidad no puede ser negativa.");
+        if ((notes?.Length ?? 0) > 1000)
+            throw new ArgumentException("Las notas no pueden superar 1000 caracteres.", nameof(notes));
+
+        var session = await _repository.GetByIdAsync(sessionId)
+            ?? throw new InvalidOperationException("La sesión ya no existe.");
+
+        session.ItemDescription = itemDescription.Trim();
+        session.ManualCount = quantity;
+        session.Notes = notes?.Trim() ?? string.Empty;
+        session.CountMethod = "Manual";
+        session.Status = "CompletedManual";
+
+        await _repository.UpdateAsync(session);
+        return session;
     }
 
     public string GetImageAbsolutePath(string relativePath)
