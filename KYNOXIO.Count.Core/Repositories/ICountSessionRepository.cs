@@ -8,6 +8,7 @@ namespace KYNOXIO.Count.Core.Repositories;
 public interface ICountSessionRepository
 {
     Task AddAsync(CountSession session);
+    Task UpdateAsync(CountSession session);
     Task<IReadOnlyList<CountSession>> GetAllAsync();
     Task<CountSession?> GetByIdAsync(string id);
 }
