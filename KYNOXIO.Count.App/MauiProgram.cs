@@ -27,6 +27,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<ICountSessionRepository>(
             _ => new SqliteCountSessionRepository(databasePath));
         builder.Services.AddSingleton<CountSessionService>();
+        builder.Services.AddSingleton<BackupService>();
 
 #if DEBUG
         builder.Logging.AddDebug();
