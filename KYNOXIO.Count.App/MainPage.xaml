@@ -29,7 +29,7 @@
                     <Border Grid.Column="2" Padding="10,7" Stroke="{StaticResource BorderColor}"
                             StrokeThickness="1" BackgroundColor="{StaticResource Surface}"
                             StrokeShape="RoundRectangle 12" VerticalOptions="Center">
-                        <Label Text="0.1.0" FontSize="11" TextColor="{StaticResource TextSecondary}" />
+                        <Label Text="0.2.0" FontSize="11" TextColor="{StaticResource TextSecondary}" />
                     </Border>
                 </Grid>
 
