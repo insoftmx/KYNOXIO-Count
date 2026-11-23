@@ -128,6 +128,9 @@
                     <Border Padding="15" BackgroundColor="{StaticResource Surface}"
                             Stroke="{StaticResource BorderColor}" StrokeThickness="1"
                             StrokeShape="RoundRectangle 16">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnHistoryClicked" />
+                        </Border.GestureRecognizers>
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                             <Label Text="▤" FontSize="22" TextColor="{StaticResource AccentCyan}"
                                    VerticalOptions="Center" />

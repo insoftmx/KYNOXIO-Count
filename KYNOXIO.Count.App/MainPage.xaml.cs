@@ -1,3 +1,5 @@
+using KYNOXIO.Count.App.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Media;
 using Microsoft.Maui.Storage;
@@ -6,7 +8,7 @@ namespace KYNOXIO.Count.App;
 
 /// <summary>
 /// Pantalla principal de KYNOXIO Count.
-/// La captura y seleccion de imagen usan MediaPicker de .NET MAUI.
+/// Conserva el flujo de captura probado y conecta el acceso al historial local.
 /// </summary>
 public partial class MainPage : ContentPage
 {
@@ -55,9 +57,19 @@ public partial class MainPage : ContentPage
         await ShowNextStageMessageAsync("Conteo mediante video en vivo");
     }
 
+    private async void OnHistoryClicked(object? sender, TappedEventArgs e)
+    {
+        var service = MauiProgram.Services.GetRequiredService<CountSessionService>();
+        await Navigation.PushModalAsync(new NavigationPage(new HistoryPage(service))
+        {
+            BarBackgroundColor = Color.FromArgb("#111F2E"),
+            BarTextColor = Colors.White
+        });
+    }
+
     /// <summary>
-    /// Abre la camara o la galeria y muestra la imagen elegida en vista previa.
-    /// Evita abrir mas de un selector simultaneamente.
+    /// Abre la cámara o galería y muestra la fotografía en vista previa.
+    /// La imagen se conserva hasta que el usuario confirma o cancela.
     /// </summary>
     private async Task OpenPhotoAsync(bool captureFromCamera)
     {
@@ -88,7 +100,7 @@ public partial class MainPage : ContentPage
                 photo = await MediaPicker.Default.PickPhotoAsync();
             }
 
-            // El usuario puede cancelar el selector sin que sea un error.
+            // Cancelar el selector es un flujo normal, no un error.
             if (photo is null)
                 return;
 

@@ -1,14 +1,17 @@
+using KYNOXIO.Count.App.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Storage;
 
 namespace KYNOXIO.Count.App;
 
 /// <summary>
-/// Vista previa de la fotografia antes de enviarla al futuro motor de conteo.
-/// Conserva el FileResult mientras esta pantalla permanece abierta.
+/// Vista previa de la fotografía antes de crear una sesión local de conteo.
 /// </summary>
 public sealed class PhotoPreviewPage : ContentPage
 {
     private readonly FileResult _photo;
+    private readonly Button _saveButton;
+    private bool _isSaving;
 
     public PhotoPreviewPage(FileResult photo)
     {
@@ -28,7 +31,7 @@ public sealed class PhotoPreviewPage : ContentPage
 
         var description = new Label
         {
-            Text = "Confirma que los materiales o componentes se vean con claridad antes de continuar.",
+            Text = "Confirma que los materiales o componentes se vean con claridad. La imagen se guardará en el teléfono y se registrará en tu historial.",
             FontSize = 13,
             TextColor = Color.FromArgb("#A6B7C5")
         };
@@ -46,10 +49,7 @@ public sealed class PhotoPreviewPage : ContentPage
             BackgroundColor = Color.FromArgb("#111F2E"),
             Stroke = Color.FromArgb("#263B4D"),
             StrokeThickness = 1,
-            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle
-            {
-                CornerRadius = 16
-            },
+            StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 16 },
             Padding = 8,
             Content = image
         };
@@ -62,16 +62,16 @@ public sealed class PhotoPreviewPage : ContentPage
             LineBreakMode = LineBreakMode.MiddleTruncation
         };
 
-        var useButton = new Button
+        _saveButton = new Button
         {
-            Text = "USAR ESTA IMAGEN",
+            Text = "GUARDAR Y CREAR CONTEO",
             BackgroundColor = Color.FromArgb("#087CA7"),
             TextColor = Colors.White,
             FontAttributes = FontAttributes.Bold,
             CornerRadius = 12,
             HeightRequest = 50
         };
-        useButton.Clicked += OnUsePhotoClicked;
+        _saveButton.Clicked += OnSaveClicked;
 
         var cancelButton = new Button
         {
@@ -101,31 +101,60 @@ public sealed class PhotoPreviewPage : ContentPage
         Grid.SetRow(description, 1);
         Grid.SetRow(imageFrame, 2);
         Grid.SetRow(fileName, 3);
-        Grid.SetRow(useButton, 4);
+        Grid.SetRow(_saveButton, 4);
         Grid.SetRow(cancelButton, 5);
 
         layout.Children.Add(heading);
         layout.Children.Add(description);
         layout.Children.Add(imageFrame);
         layout.Children.Add(fileName);
-        layout.Children.Add(useButton);
+        layout.Children.Add(_saveButton);
         layout.Children.Add(cancelButton);
 
         Content = layout;
     }
 
-    private async void OnUsePhotoClicked(object? sender, EventArgs e)
+    private async void OnSaveClicked(object? sender, EventArgs e)
     {
-        await DisplayAlert(
-            "Imagen confirmada",
-            "La fotografía quedó seleccionada. En la siguiente etapa conectaremos esta imagen con el motor de análisis y conteo.",
-            "Continuar");
+        if (_isSaving)
+            return;
 
-        await Navigation.PopModalAsync();
+        _isSaving = true;
+        _saveButton.IsEnabled = false;
+        _saveButton.Text = "GUARDANDO...";
+
+        try
+        {
+            var service = MauiProgram.Services.GetRequiredService<CountSessionService>();
+            var session = await service.CreateFromPhotoAsync(_photo);
+
+            await DisplayAlert(
+                "Conteo guardado",
+                $"Se creó la sesión {session.Folio}. La fotografía quedó almacenada en este dispositivo. El análisis automático está pendiente.",
+                "Continuar");
+
+            await Navigation.PopModalAsync();
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert(
+                "No se pudo guardar",
+                $"La fotografía no pudo registrarse. No se creó una sesión incompleta. Detalle: {ex.Message}",
+                "Aceptar");
+        }
+        finally
+        {
+            _isSaving = false;
+            _saveButton.IsEnabled = true;
+            _saveButton.Text = "GUARDAR Y CREAR CONTEO";
+        }
     }
 
     private async void OnCancelClicked(object? sender, EventArgs e)
     {
+        if (_isSaving)
+            return;
+
         await Navigation.PopModalAsync();
     }
 }

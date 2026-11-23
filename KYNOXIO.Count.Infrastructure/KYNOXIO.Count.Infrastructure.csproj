@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\KYNOXIO.Count.Core\KYNOXIO.Count.Core.csproj" />
+    <ProjectReference Include="../KYNOXIO.Count.Core/KYNOXIO.Count.Core.csproj" />
+    <PackageReference Include="sqlite-net-pcl" Version="1.11.285" />
   </ItemGroup>
 
   <PropertyGroup>
