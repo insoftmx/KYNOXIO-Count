@@ -128,6 +128,11 @@ public sealed class PhotoPreviewPage : ContentPage
             var service = MauiProgram.Services.GetRequiredService<CountSessionService>();
             var session = await service.CreateFromPhotoAsync(_photo);
 
+            // El guardado terminó; restablece el botón antes de mostrar la confirmación.
+            _isSaving = false;
+            _saveButton.IsEnabled = true;
+            _saveButton.Text = "GUARDAR Y CREAR CONTEO";
+
             await DisplayAlert(
                 "Conteo guardado",
                 $"Se creó la sesión {session.Folio}. La fotografía quedó almacenada en este dispositivo. El análisis automático está pendiente.",
