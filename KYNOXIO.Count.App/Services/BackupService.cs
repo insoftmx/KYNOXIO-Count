@@ -99,6 +99,10 @@ public sealed class BackupService
             await using (var destination = File.Create(zipPath))
                 await source.CopyToAsync(destination);
 
+            // Evita que un archivo comprimido desproporcionado consuma el almacenamiento del dispositivo.
+            if (new FileInfo(zipPath).Length > 1024L * 1024 * 1024)
+                throw new InvalidDataException("El respaldo supera el límite de 1 GB.");
+
             using var archive = ZipFile.OpenRead(zipPath);
             var manifestEntry = archive.GetEntry(ManifestName)
                 ?? throw new InvalidDataException("El archivo no contiene un respaldo válido de KYNOXIO Count.");
