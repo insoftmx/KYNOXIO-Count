@@ -114,8 +114,9 @@ public sealed class SqliteCountSessionRepositoryTests
     }
 
     [Table("CountSessions")]
-    private sealed class LegacyCountSessionRecord
+    public sealed class LegacyCountSessionRecord
     {
+        public LegacyCountSessionRecord() { }
         [PrimaryKey]
         public string Id { get; set; } = string.Empty;
         public string Folio { get; set; } = string.Empty;
