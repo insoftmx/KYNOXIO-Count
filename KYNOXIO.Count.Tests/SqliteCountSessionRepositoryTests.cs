@@ -106,10 +106,19 @@ public sealed class SqliteCountSessionRepositoryTests
 
     private static void DeleteDatabaseFiles(string path)
     {
+        // SQLiteAsyncConnection mantiene el archivo abierto durante la vida del proceso.
+        // Los archivos temporales usan nombres únicos y el runner los elimina al finalizar.
         foreach (var file in new[] { path, path + "-shm", path + "-wal" })
         {
-            if (File.Exists(file))
-                File.Delete(file);
+            try
+            {
+                if (File.Exists(file))
+                    File.Delete(file);
+            }
+            catch (IOException)
+            {
+                // El archivo sigue bloqueado por SQLite; no afecta el aislamiento de la prueba.
+            }
         }
     }
 
