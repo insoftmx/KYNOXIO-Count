@@ -50,6 +50,29 @@ Se necesita un conjunto propio de imágenes industriales representativas. Cada i
 
 No basta con imágenes genéricas de internet: el modelo debe evaluarse con las piezas, tamaños, superficies, empaques, iluminación y cámaras que se usarán en operación.
 
+## Primera fase de implementación — base de muestras
+
+La base de datos ya incorpora el contrato separado para muestras de entrenamiento:
+- Modelo de dominio `TrainingSample`.
+- Repositorio `ITrainingSampleRepository`.
+- Tabla SQLite independiente `TrainingSamples`, sin mezclar registros con `CountSessions`.
+- Grupos controlados: `IndividualParts` y `StackedMaterials`.
+- Clase/material, cantidad verificada físicamente, condiciones de captura JSON, anotaciones JSON, estado y notas.
+- Estados `Draft`, `Ready` y `Excluded`. Una muestra `Ready` requiere cantidad física verificada.
+- El repositorio se registra en inyección de dependencias y comparte el archivo SQLite local, pero opera sobre su propia tabla.
+
+**Límite de esta fase:** la interfaz para capturar/seleccionar, etiquetar y revisar muestras aún no está implementada. Tampoco se ha agregado la exportación del dataset al ZIP de respaldo. Hasta completar esas partes, las muestras no deben considerarse un dataset portable ni listo para entrenamiento. El formato JSON de anotaciones está reservado para cajas/regiones visibles; guardar solo una cantidad global no basta para entrenar un detector por instancia.
+
+Flujo de usuario que debe implementarse:
+1. Abrir el módulo Banco de imágenes de entrenamiento.
+2. Tomar una foto o seleccionar una imagen.
+3. Elegir Individuales agrupadas o Material apilado.
+4. Registrar clase/material y cantidad comprobada físicamente.
+5. Registrar condiciones de captura y observaciones; permitir mantener la muestra como borrador.
+6. En una fase de anotación, marcar cada pieza individual o los bordes/capas visibles. Solo después de validar los requisitos la muestra podrá pasar a Ready.
+7. Revisar, excluir o corregir muestras sin alterar el historial operativo.
+8. Exportar el conjunto en un paquete versionado con imágenes, manifiesto y anotaciones; probar importación y restauración antes de usarlo para entrenamiento.
+
 ## Criterios de aceptación
 
 Medir por separado:
