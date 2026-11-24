@@ -29,6 +29,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<ITrainingSampleRepository>(
             _ => new SqliteTrainingSampleRepository(databasePath));
         builder.Services.AddSingleton<CountSessionService>();
+        builder.Services.AddSingleton<TrainingSampleService>();
         builder.Services.AddSingleton<BackupService>();
 
 #if DEBUG
