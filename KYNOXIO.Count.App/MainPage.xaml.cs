@@ -88,6 +88,32 @@ public partial class MainPage : ContentPage
     }
 
     /// <summary>
+    /// Solicita el permiso de cámara en tiempo de ejecución antes de abrirla.
+    /// Si Android lo tiene denegado, ofrece llevar al usuario a los ajustes.
+    /// </summary>
+    private async Task<bool> EnsureCameraPermissionAsync()
+    {
+        var status = await Permissions.CheckStatusAsync<Permissions.Camera>();
+
+        if (status != PermissionStatus.Granted)
+            status = await Permissions.RequestAsync<Permissions.Camera>();
+
+        if (status == PermissionStatus.Granted)
+            return true;
+
+        var openSettings = await DisplayAlert(
+            "Permiso de cámara requerido",
+            "KYNOXIO Count necesita permiso para usar la cámara. Puedes habilitarlo en los ajustes de la aplicación y volver a intentarlo.",
+            "Abrir ajustes",
+            "Cancelar");
+
+        if (openSettings)
+            AppInfo.ShowSettingsUI();
+
+        return false;
+    }
+
+    /// <summary>
     /// Abre la cámara o galería y muestra la fotografía en vista previa.
     /// La imagen se conserva hasta que el usuario confirma o cancela.
     /// </summary>
@@ -113,10 +139,15 @@ public partial class MainPage : ContentPage
                     return;
                 }
 
+                if (!await EnsureCameraPermissionAsync())
+                    return;
+
                 photo = await MediaPicker.Default.CapturePhotoAsync();
             }
             else
             {
+                // El selector del sistema administra el acceso a la galería.
+                // No solicitamos permiso de cámara para elegir una imagen.
                 photo = await MediaPicker.Default.PickPhotoAsync();
             }
 
@@ -135,7 +166,9 @@ public partial class MainPage : ContentPage
         {
             await DisplayAlert(
                 "Permiso requerido",
-                "No se concedió el permiso necesario para acceder a la cámara o a las fotografías.",
+                captureFromCamera
+                    ? "Android no concedió el permiso de cámara. Revisa los permisos de KYNOXIO Count en los ajustes del dispositivo."
+                    : "No se concedió el acceso necesario para seleccionar la fotografía.",
                 "Aceptar");
         }
         catch (FeatureNotSupportedException)
