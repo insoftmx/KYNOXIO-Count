@@ -1,3 +1,4 @@
+using System.Text.Json;
 using KYNOXIO.Count.Core.Models;
 using KYNOXIO.Count.Core.Repositories;
 using SQLite;
@@ -104,8 +105,23 @@ public sealed class SqliteTrainingSampleRepository : ITrainingSampleRepository
             throw new ArgumentException("El estado de la muestra no es válido.", nameof(sample));
         if (sample.Notes is null || sample.Notes.Length > 1000)
             throw new ArgumentException("Las notas no pueden superar 1000 caracteres.", nameof(sample));
-        if (sample.Status == "Ready" && !sample.VerifiedCount.HasValue)
-            throw new ArgumentException("Una muestra lista requiere una cantidad comprobada físicamente.", nameof(sample));
+        if (sample.Status == "Ready")
+        {
+            if (!sample.VerifiedCount.HasValue)
+                throw new ArgumentException("Una muestra lista requiere una cantidad comprobada físicamente.", nameof(sample));
+
+            try
+            {
+                using var annotations = JsonDocument.Parse(sample.AnnotationsJson);
+                if (annotations.RootElement.ValueKind != JsonValueKind.Array ||
+                    annotations.RootElement.GetArrayLength() == 0)
+                    throw new ArgumentException("Una muestra lista requiere anotaciones geométricas de piezas o capas.", nameof(sample));
+            }
+            catch (JsonException ex)
+            {
+                throw new ArgumentException("Las anotaciones geométricas no tienen un formato JSON válido.", nameof(sample), ex);
+            }
+        }
     }
 
     private static TrainingSampleRecord ToRecord(TrainingSample sample) => new()
