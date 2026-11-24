@@ -141,7 +141,7 @@ public sealed class BackupService
                 manifest = await JsonSerializer.DeserializeAsync<BackupManifest>(stream, JsonOptions);
 
             if (manifestEntry.Length > 20 * 1024 * 1024 ||
-                archive.Entries.Count > 100001 ||
+                archive.Entries.Count > 200001 ||
                 manifest is null || manifest.FormatVersion != BackupFormatVersion || manifest.Sessions is null)
                 throw new InvalidDataException("La versión o estructura del respaldo no es compatible o supera los límites permitidos.");
 
@@ -171,7 +171,7 @@ public sealed class BackupService
                     sample.VerifiedCount < 0 ||
                     sample.MaterialGroup is not ("IndividualParts" or "StackedMaterials") ||
                     sample.Status is not ("Draft" or "Ready" or "Excluded") ||
-                    (sample.Status == "Ready" && !sample.VerifiedCount.HasValue) ||
+                    (sample.Status == "Ready" && (!sample.VerifiedCount.HasValue || sample.AnnotationsJson == "[]")) ||
                     sample.CaptureConditionsJson is null || sample.CaptureConditionsJson.Length > 20000 ||
                     sample.AnnotationsJson is null || sample.AnnotationsJson.Length > 200000)
                     throw new InvalidDataException("El respaldo contiene una muestra de entrenamiento inválida o duplicada.");
@@ -230,6 +230,9 @@ public sealed class BackupService
 
             foreach (var sample in manifest.TrainingSamples ?? new List<TrainingSample>())
             {
+                var existingSample = _trainingRepository is null
+                    ? null
+                    : await _trainingRepository.GetByIdAsync(sample.Id);
                 var originalExtension = Path.GetExtension(sample.ImageRelativePath).ToLowerInvariant();
                 var imageEntry = IsAllowedImageExtension(originalExtension)
                     ? archive.GetEntry($"TrainingImages/{sample.Id}{originalExtension}")
@@ -254,13 +257,15 @@ public sealed class BackupService
                 else
                 {
                     missingTrainingImages++;
-                    sample.ImageRelativePath = string.Empty;
+                    // Preserve the local image reference when the incoming backup has no copy.
+                    if (existingSample is null)
+                        sample.ImageRelativePath = string.Empty;
+                    else
+                        sample.ImageRelativePath = existingSample.ImageRelativePath;
                 }
 
                 if (_trainingRepository is null)
                     continue;
-
-                var existingSample = await _trainingRepository.GetByIdAsync(sample.Id);
                 if (existingSample is null)
                     await _trainingRepository.AddAsync(sample);
                 else
