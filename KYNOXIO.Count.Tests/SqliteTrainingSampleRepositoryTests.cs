@@ -37,7 +37,7 @@ public sealed class SqliteTrainingSampleRepositoryTests
                 VerifiedCount = 125,
                 CaptureConditionsJson = "{\"lighting\":\"industrial\"}",
                 AnnotationsJson = "[]",
-                Status = "Ready",
+                Status = "Draft",
                 Notes = "Cantidad comprobada físicamente"
             };
 
@@ -49,7 +49,7 @@ public sealed class SqliteTrainingSampleRepositoryTests
             Assert.NotNull(storedSample);
             Assert.Equal(125, storedSample!.VerifiedCount);
             Assert.Equal("IndividualParts", storedSample.MaterialGroup);
-            Assert.Equal("Ready", storedSample.Status);
+            Assert.Equal("Draft", storedSample.Status);
             Assert.Single(storedSessions);
             Assert.Equal(session.Id, storedSessions[0].Id);
         }
