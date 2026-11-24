@@ -1,7 +1,9 @@
+using System.IO.Compression;
 using System.Text.Json;
 using KYNOXIO.Count.Core.Models;
 using KYNOXIO.Count.Core.Repositories;
 using Microsoft.Maui.Storage;
+using Microsoft.Maui.ApplicationModel;
 
 namespace KYNOXIO.Count.App.Services;
 
@@ -88,6 +90,67 @@ public sealed class TrainingSampleService
     {
         var fileName = Path.GetFileName((relativePath ?? string.Empty).Replace('\\', '/'));
         return Path.Combine(_imageDirectory, fileName);
+    }
+
+    /// <summary>Exporta todas las muestras y sus fotografías en un paquete ZIP portable.</summary>
+    public async Task<string> ExportAndShareDatasetAsync()
+    {
+        var samples = await _repository.GetAllAsync();
+        Directory.CreateDirectory(FileSystem.CacheDirectory);
+        var fileName = $"KYNOXIO-Count-TrainingBank-{DateTime.Now:yyyyMMdd-HHmmss}.zip";
+        var zipPath = Path.Combine(FileSystem.CacheDirectory, fileName);
+        if (File.Exists(zipPath))
+            File.Delete(zipPath);
+
+        var manifest = new TrainingDatasetManifest
+        {
+            FormatVersion = 1,
+            CreatedAtUtc = DateTime.UtcNow,
+            Samples = samples.ToList()
+        };
+
+        using (var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+        {
+            var manifestEntry = archive.CreateEntry("kynoxio-training-dataset.json", CompressionLevel.Optimal);
+            await using (var stream = manifestEntry.Open())
+                await JsonSerializer.SerializeAsync(stream, manifest, new JsonSerializerOptions { WriteIndented = true });
+
+            foreach (var sample in samples)
+            {
+                if (string.IsNullOrWhiteSpace(sample.Id) ||
+                    sample.Id.Length > 32 ||
+                    sample.Id.Any(character => !char.IsAsciiLetterOrDigit(character) && character != '-'))
+                    throw new InvalidDataException("El banco contiene una muestra con identificador no válido.");
+
+                var sourcePath = GetImageAbsolutePath(sample.ImageRelativePath);
+                if (!File.Exists(sourcePath))
+                    continue;
+
+                var extension = Path.GetExtension(sourcePath).ToLowerInvariant();
+                if (extension is not (".jpg" or ".jpeg" or ".png" or ".webp" or ".heic"))
+                    continue;
+
+                var entry = archive.CreateEntry($"images/{sample.Id}{extension}", CompressionLevel.Optimal);
+                await using var input = File.OpenRead(sourcePath);
+                await using var output = entry.Open();
+                await input.CopyToAsync(output);
+            }
+        }
+
+        await Share.Default.RequestAsync(new ShareFileRequest
+        {
+            Title = "Exportar banco de imágenes KYNOXIO Count",
+            File = new ShareFile(zipPath)
+        });
+
+        return zipPath;
+    }
+
+    private sealed class TrainingDatasetManifest
+    {
+        public int FormatVersion { get; set; }
+        public DateTime CreatedAtUtc { get; set; }
+        public List<TrainingSample> Samples { get; set; } = new();
     }
 
     private static string GetSafeExtension(string? fileName)
