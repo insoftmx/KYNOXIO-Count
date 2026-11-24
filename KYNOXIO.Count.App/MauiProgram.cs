@@ -26,6 +26,8 @@ public static class MauiProgram
         var databasePath = Path.Combine(FileSystem.AppDataDirectory, "kynoxio-count.db3");
         builder.Services.AddSingleton<ICountSessionRepository>(
             _ => new SqliteCountSessionRepository(databasePath));
+        builder.Services.AddSingleton<ITrainingSampleRepository>(
+            _ => new SqliteTrainingSampleRepository(databasePath));
         builder.Services.AddSingleton<CountSessionService>();
         builder.Services.AddSingleton<BackupService>();
 
