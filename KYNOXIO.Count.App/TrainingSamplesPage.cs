@@ -19,6 +19,7 @@ public sealed class TrainingSamplesPage : ContentPage
     private readonly Image _preview = new() { Aspect = Aspect.AspectFit, HeightRequest = 190, IsVisible = false };
     private readonly Label _photoLabel = new() { Text = "No has seleccionado una fotografía.", TextColor = Color.FromArgb("#A6B7C5"), FontSize = 12 };
     private readonly Button _saveButton = new() { Text = "GUARDAR MUESTRA COMO BORRADOR", BackgroundColor = Color.FromArgb("#087CA7"), TextColor = Colors.White, FontAttributes = FontAttributes.Bold, CornerRadius = 12, HeightRequest = 50 };
+    private readonly Button _exportButton = new() { Text = "EXPORTAR BANCO DE IMÁGENES", BackgroundColor = Color.FromArgb("#183B50"), TextColor = Color.FromArgb("#22D3EE"), FontAttributes = FontAttributes.Bold, CornerRadius = 12, HeightRequest = 48 };
     private readonly VerticalStackLayout _samplesList = new() { Spacing = 10 };
     private FileResult? _selectedPhoto;
     private bool _isSaving;
@@ -43,6 +44,7 @@ public sealed class TrainingSamplesPage : ContentPage
         var galleryButton = MakeButton("ELEGIR DE GALERÍA", "#183B50", "#22D3EE");
         galleryButton.Clicked += async (_, _) => await SelectPhotoAsync(false);
         _saveButton.Clicked += OnSaveClicked;
+        _exportButton.Clicked += OnExportClicked;
 
         ToolbarItems.Add(new ToolbarItem
         {
@@ -169,6 +171,30 @@ public sealed class TrainingSamplesPage : ContentPage
         {
             _isSaving = false;
             _saveButton.IsEnabled = true;
+        }
+    }
+
+    private async void OnExportClicked(object? sender, EventArgs e)
+    {
+        if (!_exportButton.IsEnabled)
+            return;
+
+        try
+        {
+            _exportButton.IsEnabled = false;
+            var path = await _service.ExportAndShareDatasetAsync();
+            await DisplayAlert(
+                "Banco exportado",
+                $"Se preparó el paquete ZIP con las muestras y fotografías disponibles.\n\n{Path.GetFileName(path)}",
+                "Aceptar");
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("No se pudo exportar el banco", ex.Message, "Aceptar");
+        }
+        finally
+        {
+            _exportButton.IsEnabled = true;
         }
     }
 
