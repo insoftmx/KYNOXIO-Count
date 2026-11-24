@@ -67,7 +67,7 @@ public sealed class BackupPage : ContentPage
                     },
                     new Label
                     {
-                        Text = "El respaldo incluye tus sesiones, descripciones, cantidades, observaciones y fotografías disponibles. Se genera un archivo ZIP que puedes guardar fuera del teléfono.",
+                        Text = "El respaldo incluye tus conteos operativos y el banco de imágenes de entrenamiento, con sus fotografías y metadatos disponibles. Se genera un ZIP portable que puedes guardar fuera del teléfono.",
                         FontSize = 14,
                         TextColor = Color.FromArgb("#A6B7C5")
                     },
@@ -147,7 +147,7 @@ public sealed class BackupPage : ContentPage
             var result = await _backupService.RestoreAsync(file);
             await DisplayAlert(
                 "Restauración terminada",
-                $"Sesiones nuevas: {result.AddedSessions}\nSesiones actualizadas: {result.UpdatedSessions}\nFotografías ausentes en el respaldo: {result.MissingImages}",
+                $"Sesiones nuevas: {result.AddedSessions}\nSesiones actualizadas: {result.UpdatedSessions}\nFotografías de conteos ausentes: {result.MissingImages}\nImágenes de entrenamiento ausentes: {result.MissingTrainingImages}",
                 "Aceptar");
         }
         catch (Exception ex)
