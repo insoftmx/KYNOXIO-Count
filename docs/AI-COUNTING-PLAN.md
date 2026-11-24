@@ -61,7 +61,17 @@ La base de datos ya incorpora el contrato separado para muestras de entrenamient
 - Estados `Draft`, `Ready` y `Excluded`. Una muestra `Ready` requiere cantidad física verificada.
 - El repositorio se registra en inyección de dependencias y comparte el archivo SQLite local, pero opera sobre su propia tabla.
 
-**Límite de esta fase:** la interfaz para capturar/seleccionar, etiquetar y revisar muestras aún no está implementada. Tampoco se ha agregado la exportación del dataset al ZIP de respaldo. Hasta completar esas partes, las muestras no deben considerarse un dataset portable ni listo para entrenamiento. El formato JSON de anotaciones está reservado para cajas/regiones visibles; guardar solo una cantidad global no basta para entrenar un detector por instancia.
+**Implementado en esta fase:**
+- Pantalla Banco de imágenes accesible desde el dashboard.
+- Captura desde cámara o selección de galería.
+- Clasificación de grupo, nombre de clase, cantidad físicamente verificada y condiciones básicas de captura.
+- Guardado local en `TrainingSamples` y carpeta privada `TrainingImages`.
+- Listado de muestras guardadas como borradores.
+- Exportación del banco completo a ZIP con manifiesto JSON e imágenes disponibles.
+- Inclusión de muestras e imágenes en el respaldo general y restauración por ID.
+- Compatibilidad con respaldos versión 1 anteriores que no contienen la propiedad `TrainingSamples`.
+
+**Límites pendientes:** la pantalla todavía no permite editar/excluir muestras ni dibujar cajas delimitadoras o regiones de capas. Todas las nuevas muestras se guardan como `Draft`; una muestra `Ready` requiere cantidad física verificada y anotaciones geométricas no vacías. Por ello, el ZIP es un banco de recopilación, no un dataset listo para entrenar. Guardar solo una cantidad global no basta para entrenar un detector por instancia.
 
 Flujo de usuario que debe implementarse:
 1. Abrir el módulo Banco de imágenes de entrenamiento.
