@@ -22,23 +22,33 @@ public sealed class BackupService
     };
 
     private readonly ICountSessionRepository _repository;
+    private readonly ITrainingSampleRepository? _trainingRepository;
     private readonly string _imageDirectory;
+    private readonly string _trainingImageDirectory;
 
-    public BackupService(ICountSessionRepository repository)
+    public BackupService(
+        ICountSessionRepository repository,
+        ITrainingSampleRepository? trainingRepository = null)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _trainingRepository = trainingRepository;
         _imageDirectory = Path.Combine(FileSystem.AppDataDirectory, "Images");
+        _trainingImageDirectory = Path.Combine(FileSystem.AppDataDirectory, "TrainingImages");
     }
 
     /// <summary>Genera el ZIP en caché y abre el diálogo nativo para compartirlo o guardarlo.</summary>
     public async Task<string> CreateAndShareBackupAsync()
     {
         var sessions = await _repository.GetAllAsync();
+        var trainingSamples = _trainingRepository is null
+            ? Array.Empty<TrainingSample>()
+            : (await _trainingRepository.GetAllAsync()).ToArray();
         var backup = new BackupManifest
         {
             FormatVersion = BackupFormatVersion,
             CreatedAtUtc = DateTime.UtcNow,
-            Sessions = sessions.ToList()
+            Sessions = sessions.ToList(),
+            TrainingSamples = trainingSamples.ToList()
         };
 
         Directory.CreateDirectory(FileSystem.CacheDirectory);
@@ -67,6 +77,25 @@ public sealed class BackupService
                     continue;
 
                 var entry = archive.CreateEntry($"Images/{session.Id}{extension}", CompressionLevel.Optimal);
+                await using var input = File.OpenRead(sourcePath);
+                await using var output = entry.Open();
+                await input.CopyToAsync(output);
+            }
+
+            foreach (var sample in trainingSamples)
+            {
+                if (!IsSafeId(sample.Id))
+                    throw new InvalidDataException("Una muestra de entrenamiento contiene un identificador no válido.");
+
+                var sourcePath = GetTrainingImagePath(sample.ImageRelativePath);
+                if (!File.Exists(sourcePath))
+                    continue;
+
+                var extension = Path.GetExtension(sourcePath).ToLowerInvariant();
+                if (!IsAllowedImageExtension(extension))
+                    continue;
+
+                var entry = archive.CreateEntry($"TrainingImages/{sample.Id}{extension}", CompressionLevel.Optimal);
                 await using var input = File.OpenRead(sourcePath);
                 await using var output = entry.Open();
                 await input.CopyToAsync(output);
@@ -116,8 +145,9 @@ public sealed class BackupService
                 manifest is null || manifest.FormatVersion != BackupFormatVersion || manifest.Sessions is null)
                 throw new InvalidDataException("La versión o estructura del respaldo no es compatible o supera los límites permitidos.");
 
-            if (manifest.Sessions.Count > 100000)
-                throw new InvalidDataException("El respaldo supera el límite de sesiones permitido.");
+            if (manifest.Sessions.Count > 100000 ||
+                (manifest.TrainingSamples?.Count ?? 0) > 100000)
+                throw new InvalidDataException("El respaldo supera el límite de registros permitido.");
 
             var ids = new HashSet<string>(StringComparer.Ordinal);
             foreach (var session in manifest.Sessions)
@@ -131,10 +161,28 @@ public sealed class BackupService
                     throw new InvalidDataException("El respaldo contiene una sesión inválida o duplicada.");
             }
 
+            var sampleIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var sample in manifest.TrainingSamples ?? new List<TrainingSample>())
+            {
+                if (sample is null || !IsSafeId(sample.Id) || !sampleIds.Add(sample.Id) ||
+                    sample.ImageRelativePath is null || sample.ImageRelativePath.Length > 260 ||
+                    sample.ClassName is null || sample.ClassName.Length > 160 ||
+                    sample.Notes is null || sample.Notes.Length > 1000 ||
+                    sample.VerifiedCount < 0 ||
+                    sample.MaterialGroup is not ("IndividualParts" or "StackedMaterials") ||
+                    sample.Status is not ("Draft" or "Ready" or "Excluded") ||
+                    (sample.Status == "Ready" && !sample.VerifiedCount.HasValue) ||
+                    sample.CaptureConditionsJson is null || sample.CaptureConditionsJson.Length > 20000 ||
+                    sample.AnnotationsJson is null || sample.AnnotationsJson.Length > 200000)
+                    throw new InvalidDataException("El respaldo contiene una muestra de entrenamiento inválida o duplicada.");
+            }
+
             Directory.CreateDirectory(_imageDirectory);
+            Directory.CreateDirectory(_trainingImageDirectory);
             var added = 0;
             var updated = 0;
             var missingImages = 0;
+            var missingTrainingImages = 0;
 
             foreach (var session in manifest.Sessions)
             {
@@ -180,7 +228,46 @@ public sealed class BackupService
                 }
             }
 
-            return new RestoreResult(added, updated, missingImages);
+            foreach (var sample in manifest.TrainingSamples ?? new List<TrainingSample>())
+            {
+                var originalExtension = Path.GetExtension(sample.ImageRelativePath).ToLowerInvariant();
+                var imageEntry = IsAllowedImageExtension(originalExtension)
+                    ? archive.GetEntry($"TrainingImages/{sample.Id}{originalExtension}")
+                    : null;
+
+                if (imageEntry is not null && imageEntry.Length > 50 * 1024 * 1024)
+                    throw new InvalidDataException("Una imagen de entrenamiento supera el límite de 50 MB.");
+
+                if (imageEntry is not null)
+                {
+                    var destinationPath = Path.Combine(_trainingImageDirectory, sample.Id + originalExtension);
+                    var temporaryImage = destinationPath + ".restore";
+                    await using (var input = imageEntry.Open())
+                    await using (var output = new FileStream(temporaryImage, FileMode.Create, FileAccess.Write, FileShare.None))
+                        await input.CopyToAsync(output);
+
+                    if (File.Exists(destinationPath))
+                        File.Delete(destinationPath);
+                    File.Move(temporaryImage, destinationPath);
+                    sample.ImageRelativePath = $"TrainingImages/{sample.Id}{originalExtension}";
+                }
+                else
+                {
+                    missingTrainingImages++;
+                    sample.ImageRelativePath = string.Empty;
+                }
+
+                if (_trainingRepository is null)
+                    continue;
+
+                var existingSample = await _trainingRepository.GetByIdAsync(sample.Id);
+                if (existingSample is null)
+                    await _trainingRepository.AddAsync(sample);
+                else
+                    await _trainingRepository.UpdateAsync(sample);
+            }
+
+            return new RestoreResult(added, updated, missingImages, missingTrainingImages);
         }
         finally
         {
@@ -202,6 +289,12 @@ public sealed class BackupService
         return string.IsNullOrWhiteSpace(fileName) ? string.Empty : Path.Combine(_imageDirectory, fileName);
     }
 
+    private string GetTrainingImagePath(string relativePath)
+    {
+        var fileName = Path.GetFileName((relativePath ?? string.Empty).Replace('\\', '/'));
+        return string.IsNullOrWhiteSpace(fileName) ? string.Empty : Path.Combine(_trainingImageDirectory, fileName);
+    }
+
     private static bool IsSafeId(string? id) =>
         !string.IsNullOrWhiteSpace(id) &&
         id.Length <= 64 &&
@@ -215,7 +308,13 @@ public sealed class BackupService
         public int FormatVersion { get; set; }
         public DateTime CreatedAtUtc { get; set; }
         public List<CountSession> Sessions { get; set; } = new();
+        // Null/missing property keeps older version-1 backups compatible.
+        public List<TrainingSample> TrainingSamples { get; set; } = new();
     }
 }
 
-public sealed record RestoreResult(int AddedSessions, int UpdatedSessions, int MissingImages);
+public sealed record RestoreResult(
+    int AddedSessions,
+    int UpdatedSessions,
+    int MissingImages,
+    int MissingTrainingImages = 0);
